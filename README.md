@@ -11,7 +11,13 @@ There are a little bit dependencies.
 
 # Description of files
 
-- scrape_periodicals.py: 한국근현대잡지자료 in 일제강점기
+- scrape_periodicals.py: 한국근현대잡지자료
+- (Recent version, 2026 May) scrape_issues_urls.py, response_check_article_url.py, and scrape_article_data.py: 한국근현대잡지자료
+    - scrape_issues_urls.py: scraping issue urls from the top level url of a periodical volume and saving them as `ma_volnum_issues.csv`
+    - response_check_article_url.py: preparing valid article urls using issue urls from 'ma_XX_issues.csv' and saving them as `article_urls.csv`. 
+    - scrape_article_data.py: scraping meta data and article body text using `article_urls.csv` and saving the results as JSONL files under data directory. 
 - down-1.sh, down-2.sh,.. : 휴전회담회의록 in 대한민국
-- hanja2hangul: a program of convering hanja to hangul
+- (Moved to an indenpendent project, 2026 May) hanja2hangul: a program of convering hanja to hangul
+
+
 

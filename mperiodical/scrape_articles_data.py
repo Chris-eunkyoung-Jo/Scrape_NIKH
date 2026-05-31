@@ -1,7 +1,9 @@
+import os
 import re
 import json
 import requests
 from bs4 import BeautifulSoup
+import pdb
 
 from response_check_article_url import get_level_id
 
@@ -35,42 +37,28 @@ def retrieve_article_data(url):
 
     def find_div_cont_value(label):
         """
-        Find the <div class="cont"> value associated with a Korean label
-        such as 잡지명, 발행일, 기사제목, 기사형태.
+        Find metadata value after the article area.
+        This avoids matching labels in the search form area.
         """
-        for text_node in soup.find_all(string=True):
-            if normalize_label(text_node) == label:
-                label_tag = text_node.parent
 
-                # Search nearby parent blocks first
-                node = label_tag
-                for _ in range(5):
-                    if node is None:
-                        break
+        lines = [
+            re.sub(r"\s+", " ", line).strip()
+            for line in soup.get_text("\n", strip=True).splitlines()
+        ]
+        lines = [line for line in lines if line]
 
-                    cont = node.find(
-                        lambda tag: tag.name == "div"
-                        and "cont" in tag.get("class", [])
-                    )
+        try:
+            start_idx = lines.index("원문이미지")
+        except ValueError:
+            start_idx = 0
 
-                    if cont:
-                        return clean_text(cont)
-
-                    node = node.parent
-
-                # Fallback: next <div class="cont">
-                cont = label_tag.find_next(
-                    lambda tag: tag.name == "div"
-                    and "cont" in tag.get("class", [])
-                )
-
-                if cont:
-                    return clean_text(cont)
+        for i in range(start_idx, len(lines) - 1):
+            if normalize_label(lines[i]) == label:
+                return lines[i + 1]
 
         return None
-
+    
     labels = ["잡지명", "발행일", "기사제목", "기사형태"]
-
     result = {
         label: find_div_cont_value(label)
         for label in labels
@@ -96,12 +84,16 @@ def save_jsonl(rows, path):
 urls = load_article_urls("article_urls.csv")
 print(f"Loaded {len(urls)} article URLs")
 
+dir_name = "data"
+if os.path.exists(f"{dir_name}") is False:
+    os.makedirs(f"{dir_name}")
+
 for url in urls[:]:  # 
     print(f"\nRetrieving data from: {url}")
     try:
         data = retrieve_article_data(url)
         print(json.dumps(data, ensure_ascii=False, indent=2))
-        save_jsonl([data], f"data/{get_level_id(url)}.jsonl")
+        save_jsonl([data], f"{dir_name}/{get_level_id(url)}.jsonl")
     except Exception as e:
         print(f"Error retrieving {url}: {e}")
 
@@ -112,4 +104,4 @@ article_data = retrieve_article_data(url)
 
 #print(article_data)
 print(json.dumps(article_data, ensure_ascii=False, indent=2))
-save_jsonl([article_data], "data/ma_007_0010_0030.jsonl")
+save_jsonl([article_data], f"{dir_name}/ma_007_0010_0030.jsonl")
